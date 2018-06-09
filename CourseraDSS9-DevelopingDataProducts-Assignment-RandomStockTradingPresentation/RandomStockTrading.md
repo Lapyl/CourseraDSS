@@ -1,0 +1,49 @@
+Random Stock Trading
+========================================================
+author: Lalit A Patel
+date: 24 January 2015
+
+ShinyApp
+<br>Assignment for Coursera course
+<br>on Developing Data Products
+
+Motivation
+========================================================
+type: moti
+- This <a href="https://lapyl.shinyapps.io/RandomStockTrading">ShinyApp</a> fetches stock prices. It can help us understand price fluctuations of a stock.
+- This ShinyApp buys and sells stocks randomly. It can help us simulate stock trading before getting burned.
+- This ShinyApp provides some useful charts. They can help us towards wise decision making.
+- This ShinyApp's server.R includes some useful code for various computations.
+- This ShinyApp's ui.R has some useful code for formatting for the sidebar panel.
+
+Illustrative code
+========================================================
+type: code
+
+```r
+library(ggplot2)
+dates <- as.Date(c('2015-01-01','2015-01-02','2015-01-03','2015-01-04','2015-01-05','2015-01-06','2015-01-07','2015-01-08','2015-01-09','2015-01-10'))
+added <- sample(-1000:1000,10)
+stock <- data.frame(dates, added)
+ploo <- ggplot(data=stock, aes(x=dates, y=added, group=1)) + geom_point(colour="red", size=10, shape=23) + geom_line(colour="green", size=2) + geom_bar(colour="blue", fill="blue", width=0.03, stat="identity") 
+ploo <- ploo + labs(title = "Stock Addition vs Date") + xlab("Date") + ylab("Stock Addition")
+```
+
+Illustrative plot
+========================================================
+type: plot
+
+![plot of chunk plot](RandomStockTrading-figure/plot.png) 
+***
+![alt text](market.jpg)
+Stock market is a rat race!
+
+Wish list
+========================================================
+type: wish
+- This <a href="https://lapyl.shinyapps.io/RandomStockTrading">ShinyApp</a> fetches and charts prices of only one stock at a time. It would be nice to handle multiple stocks.
+- This ShinyApp trades stocks randomly. It would be nice to deal with actual trading data.
+- This ShinyApp provides static charts. It would be nice if they include hovering as in rCharts.
+- This ShinyApp runs slow, mainly due to the For loop. It would be nice to make it faster.
+<br><br>
+<h3>Aim + Act + Await => Achieve ... <a href="http://en.wikipedia.org/wiki/Louis_Pasteur">Lois Pasteur</a></h3>

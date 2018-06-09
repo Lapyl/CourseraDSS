@@ -1,0 +1,140 @@
+---
+title: "<center>Practical Machine Learning<br>Prediction Assignment<center>"
+author: "<center>Lalit A Patel<center>"
+date: "<center>13 November 2014<center>"
+output: html_document
+geometry: margin=1cm
+---
+
+\makeatletter
+\newcommand\gobblepars{%
+    \@ifnextchar\par%
+        {\expandafter\gobblepars\@gobble}%
+        {}}
+\makeatother
+
+\gobblepars
+
+## Introduction
+
+The objective of this project is to build a model to predict whether an excercise was done corectly. The project analyzes data from accelerometers on the belt, arm, dumbbell, and forearm of 6 participants who performed barbell lifts in 5 different ways. The excercise and data are explained at http://groupware.les.inf.puc-rio.br/har.
+
+After comparing validation accuracies of three machine learning methods, random forest method is selected and used for prediction on 20 test records. Process times are measured and prsented for reference.
+
+## Collection
+
+Necessary libraries and a seed number are loaded.
+
+```{r Load libraries., echo=TRUE}
+zlib <- as.numeric(Sys.time()) #Time starts.
+library(lattice)
+library(ggplot2)
+library(caret)
+set.seed(1357)
+zlib <- round(as.numeric(Sys.time() - zlib),2) # Timer ends. Process time is taken as zlib.
+```
+
+The training file *pml-training.csv* and testing file *pml-testing.csv* can be read directly from *https://d396qusza40orc.cloudfront.net/predmachlearn/* . Instead, they are first downloaded into RStudio's working directory, to allow their visual inspection and offline usage. They are then read into memory.
+
+```{r Read csv files., echo=TRUE}
+zcsv <- as.numeric(Sys.time())
+trcs <- read.csv("pml-training.csv")
+tscs <- read.csv("pml-testing.csv")
+zcsv <- round(as.numeric(Sys.time() - zcsv),2)
+```
+
+The dependent (response) variable *classe* is treated as a factor variable.
+
+```{r Factorize classe., echo=TRUE}
+trcs$classe <- as.factor(trcs$classe)
+```
+
+A visual inspection of the files shows that column names including *belt*, *arm*, *dumbbell*, and *forearm* words are independent (predictor) variables. A vector of these column names is defined.
+
+```{r Vectorize predictors., echo=TRUE}
+scol <- c("roll_belt","pitch_belt","yaw_belt","total_accel_belt","gyros_belt_x","gyros_belt_y","gyros_belt_z","accel_belt_x","accel_belt_y","accel_belt_z","magnet_belt_x","magnet_belt_y","magnet_belt_z","roll_arm","pitch_arm","yaw_arm","total_accel_arm","gyros_arm_x","gyros_arm_y","gyros_arm_z","accel_arm_x","accel_arm_y","accel_arm_z","magnet_arm_x","magnet_arm_y","magnet_arm_z","roll_dumbbell","pitch_dumbbell","yaw_dumbbell","total_accel_dumbbell","gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z","accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z","magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z","roll_forearm","pitch_forearm","yaw_forearm","gyros_forearm_x","gyros_forearm_y","gyros_forearm_z","accel_forearm_x","accel_forearm_y","accel_forearm_z","magnet_forearm_x","magnet_forearm_y","magnet_forearm_z")
+```
+
+The training file is divided into 75% training dataset and 25% validation dataset. Only relevant columns are retained.
+
+```{r Make datasets., echo=TRUE}
+zdiv <- as.numeric(Sys.time())
+trpt <- createDataPartition(trcs$X, p=0.75, list=FALSE)
+trdf <- trcs[trpt, c("classe",scol)]
+vadf <- trcs[-trpt, c("classe",scol)]
+tsdf <- tscs[, scol]
+zdiv <- round(as.numeric(Sys.time() - zdiv),2)
+```
+
+## Selection
+
+Decision tree method is applied to the training dataset. Its outcome is applied to the validation dataset. Accuracy, error rate, and process time are noted.
+
+```{r Apply decision tree., echo=TRUE}
+zarp <- as.numeric(Sys.time())
+library(rpart)
+morp <- train(classe~., data=trdf, method="rpart")
+corp <- confusionMatrix(vadf$classe, predict(morp, newdata=vadf))
+zarp <- round(as.numeric(Sys.time() - zarp),2)
+print(paste("Decision tree: Accuracy ",round(corp$overall[1],4),"; Error rate ",round(1 - corp$overall[1],4),"; Process time ",zarp))
+```
+
+Linear discriminant analysis method is applied to the training dataset. Its outcome is applied to the validation dataset. Accuracy, error rate, and process time are noted.
+
+```{r Apply linear discriminant., echo=TRUE}
+zald <- as.numeric(Sys.time())
+library(MASS)
+mold <- train(classe~., data=trdf, method="lda")
+cold <- confusionMatrix(vadf$classe, predict(mold, newdata=vadf))
+zald <- round(as.numeric(Sys.time() - zald),2)
+print(paste("Linear discriminant: Accuracy ",round(cold$overall[1],4),"; Error rate ",round(1 - cold$overall[1],4),"; Process time ",zald))
+```
+
+Random forest method is applied to the training dataset. Its outcome is applied to the validation dataset. Accuracy, error rate, and process time are noted.
+
+```{r Apply random forest., echo=TRUE}
+zarf <- as.numeric(Sys.time())
+library(randomForest)
+morf <- train(classe~., data=trdf, method="rf", preProcess=c("center", "scale"), trControl=trainControl(method = "cv", number = 4))
+corf <- confusionMatrix(vadf$classe, predict(morf, newdata=vadf))
+zarf <- round(as.numeric(Sys.time() - zarf),2)
+print(paste("Random forest: Accuracy ",round(corf$overall[1],4),"; Error rate ",round(1 - corf$overall[1],4),"; Process time ",zarf))
+```
+
+This shows that random forest method is more accurate and less erroneous than the other two methods. Its accuracy of `r round(corf$overall[1],2) ` is quite impressive. Though its processing time of `r zarf ` is high, it is tolerable in view of the accuracy. It is therefore appropriate to select random forest method for prediction.
+
+## Prediction
+
+The model developed above by using the random forest method is now applied to the testing dataset of 20 records.
+
+```{r Predict on test records., echo=TRUE}
+zprd <- as.numeric(Sys.time())
+pred <- predict(morf, newdata=tsdf)
+zprd <- round(as.numeric(Sys.time() - zprd),2)
+print(paste(cat("Predictions for 20 test records:\n"),pred))
+```
+
+## Submission
+
+Twenty submission files as per instructions are now generated in the working directory. 
+
+```{r Generate submissions., echo=TRUE}
+zsub <- as.numeric(Sys.time())
+for (i in 1:20) {
+    filn = paste0("problem_id_",i,".txt")
+    write.table(pred[i], file=filn, quote=FALSE, row.names=FALSE, col.names=FALSE)
+}
+zsub <- round(as.numeric(Sys.time() - zsub),2)
+```
+
+## Conclusion
+
+Random forest method is more accurate and less erroneous than some other methods. Its accuracy of `r round(corf$overall[1],2) ` is quite impressive. This method is, therefore, used for predictions on 20 test records.
+
+This R markdown was Knited with RStudio 0.98 on a 2.60GHz 2GB Windows7 32bit desktop. Main code chunks of this project took the following times.
+
+```{r conc, echo=TRUE}
+zvar <- rbind(list("Load libraries.",zlib),list("Read csv files.",zcsv),list("Make datasets.",zdiv),list("Apply decision tree.",zarp),list("Allpy linear discriminant.",zald),list("Apply random forest.",zarf),list("Predict on test records.",zprd),list("Generate submissions.",zsub))
+colnames(zvar) <- c("Code chunk process","Time in seconds")
+zvar
+```

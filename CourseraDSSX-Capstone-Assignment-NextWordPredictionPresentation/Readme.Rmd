@@ -1,0 +1,79 @@
+This CapstoneMilestoneReport repository is based on Lalit A Patel's Milestone Report for Coursera DSS Capstone Project. Html version of this Milestone Report has been posted at http://rpubs.com/Lapyl/70623 .
+
+This Milestone Report is not outstanding or exemplary. Its R script is not satisfactory. However, its html formattintg features may be of some use elsewhere.
+
+## Features
+
+This Milestone Report's html file was prepared by applying knit html on Rmd file in RStudio. The html file has the following 2 formattintg features.
+
+##### Undecorated hyperlinks
+
+* Copy "RStudio/resources/markdown.css" as "MilesLap.css" in the direcory of "MilesLap.Rmd".
+* Modify "MileLap.css": Modify style for "a" to remove decoration on hyperlinks. Modify style for "code" to show R code chunks in a different color.
+* Add the following after the top section in the Rmd file in RStudio.
+
+```{r}
+    <link rel=StyleSheet type="text/css" href="MilesLap.css" media=screen></link>
+```
+
+##### Controlled display for R code chunks
+
+* Add the following after the above link tag in the Rmd file in RStudio.
+
+```{r}
+    <script language="JavaScript">
+	function ShowHide(divId) {
+	if(document.getElementById(divId).style.display == 'none')
+	{document.getElementById(divId).style.display='block';}
+	else {document.getElementById(divId).style.display = 'none';}
+	}
+	</script>
+```
+
+* Add the following before each R code chunk in the Rmd file in RStudio.
+
+```{r}
+	<a onclick ="javascript:ShowHide('SomeDivName')" href="javascript:;">
+    	<font color="green">SomeCodeChunkName * Show/Hide</font></a>
+	<div class="mid" id="SomeDivName" style="DISPLAY: none">
+```
+
+* Add the following after each R code chunk in the Rmd file in RStudio.
+```{r}
+	</div>
+```
+
+## MilesLap.Rmd
+
+MilesLap.Rmd is R markdown file written in RStudio. Clicking on MilesLap.Rmd in this repository displays its formatted content. Its raw code can be viewed as follows.
+
+##### Raw Rmd by URL
+
+* Write "https://raw.githubusercontent.com/Lapyl/CapstoneMilestoneReport/master/MilesLap.Rmd" in the URL box of your Internet browser.
+
+##### Raw Rmd by Button
+
+* Click on MilesLap.Rmd in this repository. This will display its formatted content.
+* Click on Raw button from the top bar. This will display its raw code.
+
+## MilesLap.html
+
+MilesLap.html is html file knited from RStudio. Clicking on MilesLap.html in this repository displays its source code. Its formatted content can be viewed as follows.
+
+##### Formatted Html on Rpubs
+
+* Write "http://rpubs.com/Lapyl/70623" in the URL box of your Internet browser.
+
+##### Formatted Html by URL
+
+* Write "http://htmlpreview.github.io/?https://github.com/Lapyl/CapstoneMilestoneReport/blob/master/MilesLap.html" in the URL box of your Internet browser.
+
+##### Formatted Html by Dialog
+
+* Write "http://htmlpreview.github.io" in the URL box of your Internet browser.
+* Write "https://github.com/Lapyl/CapstoneMilestoneReport/blob/master/MilesLap.html" in the dialog box of the resulting web page.
+
+##### Formatted Html by Button
+
+* Click on MilesLap.html in this repository. This will display its source code.
+* Click on the "Open this file in GitHub for Windows" icon next to the History button in the box above its source code. This will display its formatted content.

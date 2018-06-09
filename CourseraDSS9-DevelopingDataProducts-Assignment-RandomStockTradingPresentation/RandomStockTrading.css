@@ -1,0 +1,22 @@
+.section .reveal .state-background {background:#645050;}
+.moti .reveal .state-background {background:#647D64;}
+.code .reveal .state-background {background:#787896;}
+.plot .reveal .state-background {background:#AF8C8C;}
+.wish .reveal .state-background {background:#A0C8A0;}
+
+.section .reveal h1 {color:#E1CDCD; font-family:Script MT Bold; text-align:center;}
+.moti .reveal h3 {color:#E1FAE1; font-family:Script MT Bold; text-align:center;}
+.code .reveal h3 {color:#F5F519; font-family:Script MT Bold; text-align:center;}
+.plot .reveal h3 {color:#320F0F; font-family:Script MT Bold; text-align:center;}
+.wish .reveal h3 {color:#234B23; font-family:Script MT Bold; text-align:center;}
+
+.section .reveal .present {color:#E1CDCD; font-family:Times; text-align:center;}
+.moti .reveal .present {color:#E1FAE1; font-family:Times;}
+.code .reveal .present {color:#F5F519; font-family:Times;}
+.plot .reveal .present {color:#320F0F; font-family:Times; align:center}
+.wish .reveal .present {color:#234B23; font-family:Times;}
+
+.wish .reveal h4 {color:#234B23; font-family:Script MT Bold; font-size:Small}
+
+.reveal a, .reveal a:link, .reveal a:visited, .reveal a:active {text-decoration:none; color:#F0F0F0;}
+.reveal a:hover {text-decoration:none; background-color:#FFFFFF;}

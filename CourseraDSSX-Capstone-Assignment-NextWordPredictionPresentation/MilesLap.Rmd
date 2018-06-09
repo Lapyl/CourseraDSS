@@ -1,0 +1,253 @@
+---
+title: "Coursera DSS Capstone Project Milestone Report"
+author: "Lalit A Patel"
+date: "29 March 2015"
+output: html_document
+---
+
+<link rel=StyleSheet type="text/css" href="MilesLap.css" media=screen></link>
+
+<script language="JavaScript">
+
+function ShowHide(divId) {
+if(document.getElementById(divId).style.display == 'none')
+{document.getElementById(divId).style.display='block';}
+else {document.getElementById(divId).style.display = 'none';}
+}
+
+</script>
+
+### Introduction
+
+This report summarizes an exploratory analysis of 3 text files. The analysis is meant to prepare for a Next Word Prediction model for the Coursera DSS Capstone Project.
+
+### Part 1: Initial Setup
+
+Coursera-SwiftKey.zip file was downloaded from https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip. The zip file was extracted into 4 folders for 4 languages. Each folder contains 3 txt files of blogs, news, and twits.
+
+After experimenting with tm, stringi, and stylo R packages, it was decided to use only common R packages. Part 1 code loads necessary libraries and defines necessary folders. R code chunks in this report can be shown or hidden in a java-enabled Internet browser.
+
+<a onclick ="javascript:ShowHide('Part1')" href="javascript:;"><font color="green">Part 1 R code - Show/Hide</font></a>
+<div class="mid" id="Part1" style="DISPLAY: none">
+
+```{r Part1_Initial_Setup, message=FALSE, warning=FALSE}
+# Prefixes for variables: zc:content, zd:directory, zf:file, zl:list, zn:number, zo:other, zr,running, zt:time
+ztin <- as.numeric(Sys.time()) # Time starts.
+suppressWarnings(suppressMessages(library(data.table))) # Extension of data.frame
+suppressWarnings(suppressMessages(library(R.utils))) # Extension of data.frame
+suppressWarnings(suppressMessages(library(knitr))) # A general-purpose package dor dynamic report generation in R
+zdin <- "2Files/en_US"
+zdwd <- "4Words/en_US"
+zdgm <- "5Grams/en_US"
+zcty <- c("blogs","news","twitter")
+ztin <- round(as.numeric(Sys.time() - ztin), 2) # Time ends. Process time is taken as ztin.
+```
+
+</div>
+
+Part 1 took `r ztin` seconds on a dedicated laptop: Intel Core2Duo T6600 2.20GHz, 4GB memory, Windows 8 64bit, RStudio v 0.98.1103.
+
+### Part 2: Data Cleanup and Separation
+
+Each English txt file was read in chunks of 10000 lines. In each chunk: the text was reduced to lower case letters;  numbers, punctuations, and stopwords were removed; and the text was broken into separate words. The output was saved for subsequent use, so that this part need not be repeated.
+
+<a onclick ="javascript:ShowHide('Part2')" href="javascript:;"><font color="green">Part 2 R code - Show/Hide</font></a>
+<div class="mid" id="Part2" style="DISPLAY: none">
+
+```{r Part2_Data_Cleanup_And_Separation, eval=FALSE}
+ztwd <- as.numeric(Sys.time())
+if (file.info(zdwd)$isdir) {unlink(zdwd, TRUE)}
+dir.create(zdwd, showWarnings=FALSE, recursive=TRUE)
+for (zrty in zcty) {
+    zfin <- file(paste(zdin,"/en_US.",zrty,".txt", sep=""), "r") # Open a txt file for reading.
+    znli <- 10000 # Define number of lines in each file-chunk.
+    zosn <- 1001 # Set the initial filename subscript.
+    while (zosn < 9999) {
+        zcli <- readLines(zfin, znli) # Read prescribed number of lines.        
+        zcli <- tolower(zcli) # Reduce all alpha characters to lower case.
+        zcli <- removeNumbers(zcli) # Remove numbers.
+        zcli <- removePunctuation(zcli) # Remove punctuations.
+        zcli <- removeWords(zcli, c(stopwords("english")))
+        zcli <- gsub('\\s*(?<!\\B|-)\\d+(?!\\B|-)\\s*', "", zcli, perl=TRUE) # Remove symbols.
+        zcli <- stripWhitespace(zcli) # Remove whitespaces.
+        zcli <- gsub(" ", "\r\n", zcli, ignore.case=TRUE, perl=FALSE, fixed=FALSE, useBytes=FALSE) # Place each word on a separate line.
+        writeLines(zcli, paste(zdwd,"/en_US.",zrty,"_",zosn,".txt", sep="")) # Write to a file.
+        if (length(zcli)<znli) {zosn <- 9999} else {zosn <- zosn+1} # Increase the filename subscript.
+    }
+    close(zfin) # Close the txt file.
+}
+ztwd <- round(as.numeric(Sys.time() - ztwd), 2)
+```
+
+</div>
+
+Part 2 took approximately 10 minutes.
+
+### Part 3: Tokenization to 4-grams
+
+Word tokens and n-grams were determined by using a method of adjoining and offsetting vectors. In view of limited computer resources, a sample of chunked files was used for this. A random sequence of the list of chunked files was generated. As many chunked files as possible were processed one by one in the order of this new sequence. In each process: A columnar vector of the separated words was prepared. n copies of this vector were adjoined side by side, Each copy was moved upward by one row compared to its neighbor on the left. Since n-1 rows at top and n-1 rows at bottom do not have all cells, they were removed. The output was saved for subsequent use, so that this part need not be repeated.
+
+<a onclick ="javascript:ShowHide('Part3')" href="javascript:;"><font color="green">Part 3 R code - Show/Hide</font></a>
+<div class="mid" id="Part3" style="DISPLAY: none">
+
+```{r Part3_Tokenization_To_4grams, eval=FALSE}
+ztgm <- as.numeric(Sys.time())
+if (file.info(zdgm)$isdir) {unlink(zdgm, TRUE)}
+dir.create(zdgm, showWarnings=FALSE, recursive=TRUE)
+if (file.exists(paste(zdwd,"/en_US.blogs_1001.txt", sep=""))) {
+    zlfi <- list.files(path=zdwd, pattern="*.txt", all.files=TRUE, full.names=TRUE, recursive=FALSE) # Make a list of txt files.
+    znfi <- length(zlfi)
+    znor <- sample(1:znfi, replace=FALSE) # Draw a sample from the sequence of txt files.
+    lapply(paste(znor, " : ", zlfi), write, paste(zdgm, "/0List.txt", sep=""), append=TRUE, ncolumns=100) # Save as a list of random sequence.
+    zcg1 <- data.table(t(rep(NA,2))) # Create an empty table zcg1 for tokens.
+    zcg2 <- data.table(t(rep(NA,3))) # Create an empty table zcg2 of 2-grams.
+    zcg3 <- data.table(t(rep(NA,4))) # Create an empty table zcg3 of 3-grams.
+    zcg4 <- data.table(t(rep(NA,5))) # Create an empty table zcg4 of 4-grams.
+    colnames(zcg1) <- c("word1","freq") # Name columns.
+    colnames(zcg2) <- c("word1","word2","freq")
+    colnames(zcg3) <- c("word1","word2","word3","freq")
+    colnames(zcg4) <- c("word1","word2","word3","word4","freq")
+    zosn <- 1000
+    for (zrfi in znor) { # Take each number from the random sequence.
+        zosn <- zosn + 1
+        print(paste(zosn, " : ", zrfi, " : ", zlfi[zrfi])) # This is to track the progress while the code is running.
+        zcd0 <- data.table(read.table(zlfi[zrfi], header=FALSE, fill=TRUE)) # Read the txt file as a table.
+        znro <- nrow(zcd0) # Count number of rows.
+        zcd1 <- zcd0[1:(znro-0)] # Make a matrix zcd1 of tokens by taking 1 vextor.
+        zcd2 <- cbind(zcd0[1:(znro-1)], zcd0[2:(znro-0)]) # Make a matrix zcd2 of 2-grams by offsetting 2 vectors. 
+        zcd3 <- cbind(zcd0[1:(znro-2)], zcd0[2:(znro-1)], zcd0[3:(znro-0)]) # Make a matrix zcd3 of 3-grams by offsetting 3 vectors. 
+        zcd4 <- cbind(zcd0[1:(znro-3)], zcd0[2:(znro-2)], zcd0[3:(znro-1)], zcd0[4:(znro-0)]) # Make a matrix zcd4 of 4-grams by offsetting 4 vector. 
+        colnames(zcd1) <- c("word1") # Name columns.
+        colnames(zcd2) <- c("word1","word2")
+        colnames(zcd3) <- c("word1","word2","word3")
+        colnames(zcd4) <- c("word1","word2","word3","word4")
+        zcd1$freq <- 1 # Set frequency to 1.
+        zcd2$freq <- 1
+        zcd3$freq <- 1
+        zcd4$freq <- 1
+        zcg1 <- rbind(zcg1, zcd1) # Make new zcg1 by combining zcg1 of previous records and zcd1 of new records.
+        zcg2 <- rbind(zcg2, zcd2)
+        zcg3 <- rbind(zcg3, zcd3)
+        zcg4 <- rbind(zcg4, zcd4)
+        zcg1 <- aggregate(freq ~ word1, data=zcg1, FUN="sum") # Aggregate zcg1 records by adding up frequencies.   
+        zcg2 <- aggregate(freq ~ word1+word2, data=zcg2, FUN="sum")
+        zcg3 <- aggregate(freq ~ word1+word2+word3, data=zcg3, FUN="sum")
+        zcg4 <- aggregate(freq ~ word1+word2+word3+word4, data=zcg4, FUN="sum")
+        zcg1 <- zcg1[order(-zcg1$freq),] # Sort zcg1 records in descending order of frequency.
+        zcg2 <- zcg2[order(-zcg2$freq),]
+        zcg3 <- zcg3[order(-zcg3$freq),]
+        zcg4 <- zcg4[order(-zcg4$freq),]
+        write.table(zcg1, paste(zdgm, "/1gram_", zosn, ".txt", sep="")) # Save zcg1 as a txt file and suffix it sequentially.
+        write.table(zcg2, paste(zdgm, "/2gram_", zosn, ".txt", sep=""))
+        write.table(zcg3, paste(zdgm, "/3gram_", zosn, ".txt", sep=""))
+        write.table(zcg4, paste(zdgm, "/4gram_", zosn, ".txt", sep=""))
+        write(paste(zosn, " : ", zrfi, " : ", zlfi[zrfi]), paste(zdgm, "/0Gram.txt", sep=""), append=TRUE, ncolumns=100)
+    }
+}
+ztgm <- round(as.numeric(Sys.time() - ztgm), 2)
+```
+
+</div>
+
+Part 3 stopped after processing 60 txt files in about 20 hours.
+
+### Part 4: Computation of Values
+
+Characteristics of files and n-grams were computed as follows.
+
+<a onclick ="javascript:ShowHide('Part4')" href="javascript:;"><font color="green">Part 4 R code - Show/Hide</font></a>
+<div class="mid" id="Part4" style="DISPLAY: none">
+
+```{r Part4_Computation_Of_Values_A, message=FALSE, warning=FALSE}
+ztva <- as.numeric(Sys.time())
+# Files characteristics
+znty <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0), ncol=6, byrow=TRUE)
+colnames(znty) <- c("Bytes", "Characters", "Words", "Lines", "Chunked", "Processed")
+rownames(znty) <- zcty
+for (i in 1:3) {
+    znty[i,1] <- file.info(paste(zdin,"/en_US.",zcty[i],".txt", sep=""))$size
+    zcrl <- readLines(paste(zdin,"/en_US.",zcty[i],".txt", sep=""))
+    znty[i,2] <- sum(nchar(zcrl))
+    znty[i,3] <- length(unlist(grep(" ",gsub("  "," ",readLines(paste(zdin,"/en_US.",zcty[i],".txt", sep=""))))))
+    znty[i,4] <- length(zcrl)
+    znty[i,5] <- length(grep(zcty[i], readLines(paste(zdgm,"/0List.txt", sep=""))))
+    znty[i,6] <- length(grep(zcty[i], readLines(paste(zdgm,"/0Gram.txt", sep=""))))
+}
+#n-grams characteristics
+zngm <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0), ncol=5, byrow=TRUE)
+colnames(zngm) <- c("Bytes", "nGrams", "0.25Fract","0.50Fract","0.75Fract")
+rownames(zngm) <-  c("Tokens","2-grams","3-grams","4-grams")
+zosn <- 1000+length(readLines(paste(zdgm, "/0Gram.txt", sep="")))
+for (j in 1:4) {
+    zngm[j,1] <- file.info(paste(zdgm,"/",j,"gram_",zosn,".txt", sep=""))$size
+    zcrl <- readLines(paste(zdgm,"/",j,"gram_",zosn,".txt", sep=""))
+    zngm[j,2] <- length(zcrl)
+    zcgq <- read.table(file=paste(zdgm,"/",j,"gram_",zosn,".txt",sep=""), sep="", header=TRUE, na.strings="", stringsAsFactors=FALSE)
+    zcgq$cumf <- cumsum(zcgq$freq)
+    zcgq$cumf <- zcgq$cumf/max(zcgq$cumf)
+    zngm[j,3] <- nrow(zcgq[zcgq$cumf<0.25,])/nrow(zcgq)
+    zngm[j,4] <- nrow(zcgq[zcgq$cumf<0.50,])/nrow(zcgq)
+    zngm[j,5] <- nrow(zcgq[zcgq$cumf<0.75,])/nrow(zcgq)
+    if (j==1) {zcgr1<-zcgq[1:20,c("freq","word1")]; rownames(zcgr1) <- paste(c(1:20), zcgr1$word1)}
+    if (j==2) {zcgr2<-zcgq[1:20,c("freq","word1","word2")]; rownames(zcgr2) <- paste(c(1:20), zcgr2$word1, zcgr2$word2)}
+    if (j==3) {zcgr3<-zcgq[1:20,c("freq","word1","word2","word3")]; rownames(zcgr3) <- paste(c(1:20), zcgr3$word1, zcgr3$word2, zcgr3$word3)}
+    if (j==4) {zcgr4<-zcgq[1:20,c("freq","word1","word2","word3","word4")]; rownames(zcgr4) <- paste(c(1:20), zcgr4$word1, zcgr4$word2, zcgr4$word3, zcgr4$word4)}
+}
+ztva <- round(as.numeric(Sys.time() - ztva), 2)
+```
+
+</div>
+
+Part 4 took `r ztva` seconds.
+
+```{r Part4_Computation_Of_Values_B, echo=FALSE, results='tex'}
+kable(znty, digits=0, format="html")
+kable(zngm, digits=c(0,0,2,2,2), format="html")
+```
+
+### Part 5: Visualization by Plots
+
+Plots were prepared for characteristics of files and n-grams, and frequencies of 20 most frequent tokens and n-grams.
+
+```{r Part5_Visualization_By_Plots, echo=FALSE, fig.width=12, fig.height=6}
+ztpl <- as.numeric(Sys.time())
+par(mfrow=c(1,3))
+barplot(znty[,1:2], beside=TRUE, main="Files - Bytes & Characters", col=terrain.colors(3))
+legend(1, 150000000, rownames(znty), cex=0.6, fill=terrain.colors(3))
+barplot(znty[,3:4], beside=TRUE, main="Files - Words & Lines", col=terrain.colors(3))
+legend(1, 1500000, rownames(znty), cex=0.6, fill=terrain.colors(3))
+barplot(znty[,5:6], beside=TRUE, main="Files - Chunked & Processed", col=terrain.colors(3))
+legend(1, 150, rownames(znty), cex=0.6, fill=terrain.colors(3))
+par(mfrow=c(1,3))
+barplot(zngm[,1:1], beside=TRUE, main="nGrams - Bytes", col=terrain.colors(4))
+legend(1, 250000000, rownames(zngm), cex=0.6, fill=terrain.colors(4))
+barplot(zngm[,2:2], beside=TRUE, main="nGrams - nGrams", col=terrain.colors(4))
+legend(1, 250000000, rownames(zngm), cex=0.6, fill=terrain.colors(4))
+barplot(zngm[,3:5], beside=TRUE, main="nGrams - 0.25 & 0.50 & 0.75 Fractions", col=terrain.colors(4))
+legend(1, 0.5, rownames(zngm), cex=0.6, fill=terrain.colors(4))
+par(mfrow=c(1,2))
+barplot(zcgr1[,1], horiz=TRUE, main="Frequent tokens", names.arg=(rownames(zcgr1)), axes=TRUE, legend.text=TRUE, density=NA, col="orange", space=c(0,2), cex.names=0.5, las=1)
+barplot(zcgr2[,1], horiz=TRUE, main="Frequent 2-grams", names.arg=(rownames(zcgr2)), axes=TRUE, legend.text=TRUE, density=NA, col="gold", space=c(0,2), cex.names=0.5, las=1)
+par(mfrow=c(1,2))
+barplot(zcgr3[,1], horiz=TRUE, main="Frequent 3-grams", names.arg=(rownames(zcgr3)), axes=TRUE, legend.text=TRUE, density=NA, col="forestgreen", space=c(0,2), cex.names=0.5, las=1)
+barplot(zcgr4[,1], horiz=TRUE, main="Frequent 4-grams", names.arg=(rownames(zcgr4)), axes=TRUE, legend.text=TRUE, density=NA, col="dodgerblue", space=c(0,2), cex.names=0.5, las=1)
+ztpl <- round(as.numeric(Sys.time() - ztpl), 2)
+```
+
+Part 5 took `r ztpl` seconds.
+
+### Inferences and Conclusion
+
+* Common R packages are sufficient for tokenization, n-grams preparation, and next-word prediction modeling.
+
+* Method of adjoining and offsetting vectors, as used in part 3, is good for determining word tokens and n-grams.
+
+* 4-grams may suffice for a prediction model for this project. Higher n-grams are needed for improving the model.
+
+* A sample of corpora may suffice for n-grams preparation for next-word prediction, due to significant repeatation of n-grams.
+
+* Infrequent n-grams may be removed, since a large part of the content is covered by a few high-frequency n-grams. This can reduce uploading to the sninyapp server and speed up the next-word prediction.
+
+* Part 2 code can be improved to remove foregin words and profanity.
+
+* Part 3 code needs to be improved in speed by making some changes.
